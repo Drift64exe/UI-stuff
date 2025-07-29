@@ -3,37 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
-  <link rel="stylesheet" href="styles.css">
   <title>Browser Fingerprint</title>
+  <style>
+    .heading {
+      text-align: center;
+    }
+
+    nav {
+      text-align: center;
+      margin: 20px 0 0 ;
+      padding: 10px 0;
+    }
+
+    nav a {
+      font-weight: normal;
+      padding: 10px 5px;
+      font-size: 17px;
+    }
+  </style>
 </head>
 <body>
-    <nav>
-        <a href="./info.html">Fingerprinting Techniques</a>
-        <a href="./prevent.html">Prevent Browser Fingerprinting</a>
-    </nav>
-  <h2>Browser Fingerprint</h2>
-  <div id="btn"style="text-align: left;">
-  <button>Click Me</button>
-</div>
-  <p>Your browser fingerprint is:</p>
-  <p id="thumbmark"></p>
+<nav>
+  <a href="./info.html">Fingerprinting Techniques</a>
+  <a href="./prevent.html">Prevent Browser Fingerprinting</a>
+</nav>
+<h2>Browser Fingerprint</h2>
+<button id="btn">Click Me</button>
+<p>When you click this button, we will log your browser fingerprint, as well as the details involved in your fingerprint. We will also make a brief connection to Amazon's IP Checking service.</p>
+<p>You can request a deletion of this data by emailing support@eridius.org with your IP address included in the email.</p>
 
-  <script type="module">
-    const button = document.getElementById('btn');
-    const output = document.getElementById('thumbmark');
+<h2>Fingerprint Data</h2>
+<div id="thumbmark"></div>
 
-    button.addEventListener('click', async () => {
-      try {
-        const ThumbmarkModule = await import('https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.esm.js');
-        const tm = new ThumbmarkModule.Thumbmark();
-        const t = await tm.get();
-        console.log("Thumbmark:", t.thumbmark);
-        output.innerText = t.thumbmark;
-      } catch (err) {
-        console.error("Error:", err);
-        output.innerText = "Error generating fingerprint";
-      }
+<script type="module">
+  const button = document.getElementById('btn');
+  const output = document.getElementById('thumbmark');
+  const element = document.createElement('table');
+  const table = document.createElement('tbody');
+
+  function fetchIpAddress() {
+    return new Promise((resolve, reject) => {
+      fetch('http://checkip.amazonaws.com')
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.text();
+              })
+              .then(ip => resolve({'ip_address': ip.trim()}))
+              .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                reject(error);
+              });
     });
-  </script>
+  }
+
+  const recursive_print = (dict) => {
+    for (const item of Object.keys(dict)) {
+      if (typeof dict[item] == "object") {
+        const row = document.createElement('tr');
+        const name = document.createElement('th');
+        name.colSpan = 2
+        name.innerText = item;
+        name.classList.add("heading")
+
+        row.appendChild(name);
+        table.appendChild(row);
+
+        recursive_print(dict[item]);
+      } else {
+        if (dict[item] && dict[item] !== "undefined") {
+          const row = document.createElement('tr');
+          const name = document.createElement('tr');
+          const value = document.createElement('td');
+          name.innerText = item
+          value.innerText = dict[item];
+
+          row.appendChild(name);
+          row.appendChild(value);
+
+          table.appendChild(row);
+        }
+      }
+    }
+  }
+
+  button.addEventListener('click', async () => {
+    try {
+      const ThumbmarkModule = await import('https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.esm.js');
+      const tm = new ThumbmarkModule.Thumbmark();
+      tm.includeComponent('ip_address', fetchIpAddress)
+      const t = await tm.get();
+      console.log(t)
+      recursive_print(t)
+
+      element.appendChild(table)
+      document.getElementById("thumbmark").appendChild(element)
+    } catch (err) {
+      console.error("Error:", err);
+      output.innerText = "Error generating fingerprint";
+    }
+  });
+</script>
 </body>
 </html>
