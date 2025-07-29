@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+  <title>Thumbmark Fingerprint Test</title>
+</head>
+<body>
+  <h1>Browser Fingerprint</h1>
+  <button id="btn">Get Fingerprint</button>
+  <p>Your browser fingerprint is:</p>
+  <p id="thumbmark"></p>
+
+  <script type="module">
+    const button = document.getElementById('btn');
+    const output = document.getElementById('thumbmark');
+
+    button.addEventListener('click', async () => {
+      try {
+        const ThumbmarkModule = await import('https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.esm.js');
+        const tm = new ThumbmarkModule.Thumbmark();
+        const t = await tm.get();
+        console.log("Thumbmark:", t.thumbmark);
+        output.innerText = t.thumbmark;
+      } catch (err) {
+        console.error("Error:", err);
+        output.innerText = "Error generating fingerprint";
+      }
+    });
+  </script>
+</body>
+</html>
